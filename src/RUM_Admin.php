@@ -4,142 +4,316 @@ namespace WP_Datadog_RUM;
 
 class RUM_Admin
 {
+
+    public $datadog_rum_options = [];
+
+    public $datadog_site_options = [
+        'datadoghq.com' => 'US1 (datadoghq.com)',
+        'us3.datadoghq.com' => 'US3 (us3.datadoghq.com)',
+        'us5.datadoghq.com' => 'US5 (us5.datadoghq.com)',
+        'datadoghq.eu' => 'EU1 (datadoghq.eu)',
+        'ddog-gov.com' => 'US1-FED (ddog-gov.com)',
+        'ap1.datadoghq.com' => 'AP1 (ap1.datadoghq.com)',
+    ];
+
+    public $datadog_rum_field_list = [];
+
     public function __construct()
     {
         load_plugin_textdomain('datadog-rum', false, dirname(plugin_basename(__FILE__)) . '/languages');
-        add_action('admin_menu', [$this, 'datadog_rum_config']);
-        add_filter('plugin_action_links_' . WDR_PLUGIN_BASENAME, [$this, 'add_datadog_rum_action_links']);
-    }
+        add_filter('plugin_action_links_' . WP_DATADOG_RUM_BASENAME, [$this, 'add_datadog_rum_action_links']);
+        add_action('admin_menu', array($this, 'datadog_rum_add_plugin_page'));
+        add_action('admin_init', array($this, 'datadog_rum_page_init'));
 
-    public function print_datadogrum_management()
-    {
-        $clientToken = $applicationId = $sampleRate = $trackInteractions = $site = "";
-
-        // Define the Datadog Site options array based on the data you provided
-        $datadog_site_options = [
-            'datadoghq.com' => 'US1 (datadoghq.com)',
-            'us3.datadoghq.com' => 'US3 (us3.datadoghq.com)',
-            'us5.datadoghq.com' => 'US5 (us5.datadoghq.com)',
-            'datadoghq.eu' => 'EU1 (datadoghq.eu)',
-            'ddog-gov.com' => 'US1-FED (ddog-gov.com)',
-            'ap1.datadoghq.com' => 'AP1 (ap1.datadoghq.com)',
+        // Build Field List
+        $this->datadog_rum_field_list = [
+            'client_token' => [
+                'title' => 'Client Token',
+                'description' => 'A Datadog client token.',
+                'type' => 'text',
+                'attributes' => [
+                    'placeholder' => 'ex: pubxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+                ]
+            ],
+            'app_id' => [
+                'title' => 'Application ID',
+                'description' => 'The RUM application ID.',
+                'type' => 'text',
+                'attributes' => [
+                    'placeholder' => 'ex: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+                ]
+            ],
+            'site' => [
+                'title' => 'Datadog Site',
+                'description' => '<a href="https://docs.datadoghq.com/getting_started/site/">The Datadog site parameter of your organization.</a>',
+                'type' => 'select',
+                'options' => $this->datadog_site_options,
+            ],
+            'service' => [
+                'title' => 'Service Name',
+                'description' => 'The service name for your application. Follows the <a href="https://docs.datadoghq.com/getting_started/tagging/#define-tags">tag syntax requirements</a>.',
+                'type' => 'text',
+                'attributes' => [
+                    'placeholder' => 'ex: web-store'
+                ]
+            ],
+            'env' => [
+                'title' => 'Environment',
+                'description' => 'The application’s environment, for example: prod, pre-prod, and staging. Follows the <a href="https://docs.datadoghq.com/getting_started/tagging/#define-tags">tag syntax requirements</a>.',
+                'type' => 'text',
+                'attributes' => [
+                    'placeholder' => 'ex: staging-1 or prod'
+                ]
+            ],
+            'version' => [
+                'title' => 'Version',
+                'description' => 'The application’s version, for example: 1.2.3, 6c44da20, and 2020.02.13. Follows the <a href="https://docs.datadoghq.com/getting_started/tagging/#define-tags">tag syntax requirements</a>.',
+                'type' => 'text',
+                'attributes' => [
+                    'placeholder' => 'ex: 1.0.3'
+                ]
+            ],
+            'session_sample_rate' => [
+                'title' => 'Session Sample Rate',
+                'description' => 'Set the % of total user sessions you want to capture for this application.',
+                'type' => 'number',
+                'attributes' => [
+                    'min' => 0,
+                    'max' => 100,
+                ]
+            ],
+            'session_replay_sample_rate' => [
+                'title' => 'Session Replay Sample Rate',
+                'description' => 'Set the % of captured user sessions that should include Session Replay recordings.',
+                'type' => 'number',
+                'attributes' => [
+                    'min' => 0,
+                    'max' => 100,
+                ]
+            ],
+            'track_user_interactions' => [
+                'title' => 'Track User Interactions',
+                'description' => 'Enables <a href="https://docs.datadoghq.com/real_user_monitoring/browser/tracking_user_actions">automatic collection of users actions</a>.',
+                'type' => 'checkbox',
+            ],
+            'track_resources' => [
+                'title' => 'Track Resources',
+                'description' => 'Enables collection of resource events.',
+                'type' => 'checkbox',
+            ],
+            'track_long_tasks' => [
+                'title' => 'Track Long Tasks',
+                'description' => 'Enables collection of long task events.',
+                'type' => 'checkbox',
+            ],
+            'default_privacy_level' => [
+                'title' => 'Default Privacy Level',
+                'description' => 'See <a href="https://docs.datadoghq.com/real_user_monitoring/session_replay/privacy_options?tab=maskuserinput">Session Replay Privacy Options</a>.',
+                'type' => 'select',
+                'options' => [
+                    'mask-user-input' => 'All user input masked by default',
+                    'allow' => 'All text available by default',
+                    'mask' => 'All text masked by default'
+                ]
+            ]
         ];
-        $rumErrors = [];
-
-        if (isset($_POST['submit'])) {
-            if (!current_user_can('manage_options')) {
-                wp_die(__('You do not have sufficient permissions to manage options for this blog.'));
-            }
-            $clientToken = sanitize_text_field(trim($_POST['datadog_rum_client_token']));
-            if (strlen($clientToken) >= 35 && preg_match("/^pub/", $clientToken)) {
-                update_option('datadog_rum_client_token', $clientToken);
-            } else {
-                $rumErrors[] = 'Invalid clientToken.';
-            }
-
-            $applicationId = sanitize_text_field(trim($_POST['datadog_rum_app_id']));
-            if (strlen($applicationId) > 35 && substr_count($applicationId, "-") >= 4) {
-                update_option('datadog_rum_app_id', $applicationId);
-            } else {
-                $rumErrors[] = 'Invalid applicationId.';
-            }
-
-            $sampleRate = sanitize_text_field(trim($_POST['datadog_rum_sample_rate']));
-            if (filter_var($sampleRate, FILTER_VALIDATE_INT) && $sampleRate >= 0 && $sampleRate <= 100) {
-                update_option('datadog_rum_sample_rate', $sampleRate);
-            } else {
-                $rumErrors[] = 'sampleRate must be an integer between 0 and 100.';
-            }
-
-            $site = sanitize_text_field(trim($_POST['datadog_rum_site']));
-            update_option('datadog_rum_site', $site);
-
-            $trackInteractions = sanitize_text_field(trim($_POST['datadog_rum_track_interactions']));
-            update_option('datadog_rum_track_interactions', $trackInteractions);
-
-            if (empty($rumErrors)) {
-                ?>
-                <div id="message" class="updated fade"><p><strong>Options saved.</strong></p></div>
-                <?php
-            }
-
-            if (!empty($rumErrors)) {
-                ?>
-                <div id="message" class="error fade"><p><strong>
-                            <?php foreach ($rumErrors as $error) {
-                                echo "Error: " . $error . " <br/>";
-                            } ?>
-                        </strong></p></div>
-                <?php
-            }
-        }
-        ?>
-        <div class="wrap">
-            <img src="<?php echo plugin_dir_url(__FILE__) . 'datadog.svg'; ?>" width="100" alt="Datadog"/>
-            <h2>Datadog RUM</h2>
-            <p>Create a <a href="https://app.datadoghq.com/rum/list/">RUM application</a> in Datadog and enter its
-                settings below. If you do not yet have an account you can sign up for a <a
-                        href="https://www.datadoghq.com/free-datadog-trial/">free trial</a>.</p>
-            <form method="post" action="">
-                <b>Datadog clientToken</b>
-                <input name="datadog_rum_client_token" type="text" id="datadog_rum_client_token"
-                       value="<?php echo esc_attr(get_option('datadog_rum_client_token')); ?>" maxlength="40" size="40"
-                       placeholder="e.g. pub12345667890"/><br/>
-                <b>Datadog RUM applicationId</b>
-                <input name="datadog_rum_app_id" type="text" id="datadog_rum_app_id"
-                       value="<?php echo esc_attr(get_option('datadog_rum_app_id')); ?>" maxlength="40" size="40"
-                       placeholder="e.g. foo-bar-baz-buzz"/><br/>
-                <b>Percentage of sessions to track</b> (eg 100 for all, 0 for none)</b>
-                <input name="datadog_rum_sample_rate" type="text" id="datadog_rum_sample_rate"
-                       value="<?php echo esc_attr(get_option('datadog_rum_sample_rate', '100')); ?>" size="3"
-                       maxlength="3"/>
-                <br/>
-                <b><label for="datadog_rum_site">Datadog Site</label></b>
-                <select id="datadog_rum_site" name="datadog_rum_site">
-                    <?php foreach ($datadog_site_options as $parameter => $label): ?>
-                        <option value="<?php echo esc_attr($parameter); ?>" <?php selected(get_option('datadog_rum_site'), $parameter); ?>>
-                            <?php echo esc_html($label); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-                <br/>
-                <b><label for="datadog_rum_track_interactions">Track Interactions</label></b>
-                <select id="datadog_rum_track_interactions" name="datadog_rum_track_interactions">
-                    <option value="true" <?php selected(get_option('datadog_rum_track_interactions', 'true'), 'true'); ?>>
-                        True
-                    </option>
-                    <option value="false" <?php selected(get_option('datadog_rum_track_interactions'), 'false'); ?>>
-                        False
-                    </option>
-                </select>
-                <br/>
-                <input type="submit" name="submit" value="<?php esc_attr_e('Save Changes'); ?>"/>
-            </form>
-        </div>
-        <?php
     }
 
-    public function datadog_rum_config()
+    public function datadog_rum_add_plugin_page()
     {
-        if (function_exists('add_submenu_page')) {
-            add_submenu_page(
-                'options-general.php',
-                __('Datadog RUM', 'datadog-rum'),
-                __('Datadog RUM'),
-                'manage_options',
-                'datadog-rum-config',
-                [$this, 'print_datadogrum_management']
+        add_options_page(
+            'Datadog RUM',
+            'Datadog RUM',
+            'manage_options',
+            'datadog-rum',
+            array($this, 'datadog_rum_create_admin_page')
+        );
+    }
+
+    /**
+     * Create admin page.
+     */
+    public function datadog_rum_create_admin_page()
+    {
+        $this->datadog_rum_options = get_option('datadog_rum_options');
+        $image_url = WP_DATADOG_RUM_PLUGIN_URL . 'datadog.svg';
+
+        echo <<<FORM_TOP
+        <div class="wrap">
+            <img src="$image_url" width="100" alt="Datadog" />
+            <h1>Datadog RUM</h1>
+
+            <form method="post" action="options.php">
+        FORM_TOP;
+
+        // Render form content.
+        settings_fields('datadog_rum_option_group');
+        do_settings_sections('datadog-rum-admin');
+        submit_button();
+
+        echo <<<FORM_BOTTOM
+        </form>
+        </div>
+        FORM_BOTTOM;
+    }
+
+    public function datadog_rum_page_init()
+    {
+        register_setting(
+            'datadog_rum_option_group', // option_group
+            'datadog_rum_options', // option_name
+        );
+
+        add_settings_section(
+            'datadog_rum_setting_section',
+            'Settings',
+            array($this, 'datadog_rum_section_info'),
+            'datadog-rum-admin'
+        );
+
+
+        // Add all defined fields.
+        foreach ($this->datadog_rum_field_list as $key => $field) {
+            $field_key = 'datadog_rum_' . $key;
+            add_settings_field(
+                $field_key,
+                $field['title'],
+                array($this, 'datadog_rum_field_callback'),
+                'datadog-rum-admin',
+                'datadog_rum_setting_section',
+                [
+                    'label_for' => $field_key,
+                    'key' => $key,
+                    'field' => $field,
+                ]
             );
         }
+    }
+
+    public function datadog_rum_section_info()
+    {
+        echo <<<TEXT
+        <p>
+            Create a <a target="_blank" href="https://app.datadoghq.com/rum/list/">RUM application</a> in Datadog and enter its settings below. If you do not yet have an account you can sign up for a <a href="https://www.datadoghq.com/free-datadog-trial/">free trial</a>.
+        </p>
+        TEXT;
+    }
+
+    public function datadog_rum_field_callback($options)
+    {
+        $key = $options['key'];
+        $field = $options['field'];
+        $type = !empty($field['type']) ? $options['field']['type'] : 'text';
+
+        switch ($type) {
+            case 'text':
+                $output = $this->datadog_rum_field_text($key, $field);
+                break;
+            case 'checkbox':
+                $output = $this->datadog_rum_field_checkbox($key, $field);
+                break;
+            case 'select':
+                $output = $this->datadog_rum_field_select($key, $field);
+                break;
+            case 'number':
+                $output = $this->datadog_rum_field_number($key, $field);
+                break;
+            default:
+                $output = "";
+                break;
+        }
+
+        echo $output;
+    }
+
+    public function datadog_rum_field_text($key, $field)
+    {
+        $desc_id = $key . 'description';
+        $value = esc_attr($this->datadog_rum_options[$key] ?? '');
+        $attributes = (!empty($field['attributes'])) ? $this->print_attributes($field['attributes']) : "";
+
+        $input = "<input type='text' name='datadog_rum_options[$key]' id='$key' value='$value' aria-describedby='$desc_id' $attributes>";
+        $description = $this->create_description_markup($key, $field);
+
+        return $input . $description;
+    }
+
+    public function datadog_rum_field_checkbox($key, $field)
+    {
+        // Checked attribute
+        if (!empty($this->datadog_rum_options[$key])) {
+            $field['attributes']['checked'] = true;
+        }
+
+        $desc_id = $key . 'description';
+        $attributes = (!empty($field['attributes'])) ? $this->print_attributes($field['attributes']) : "";
+
+        $input = "<input type='checkbox' name='datadog_rum_options[$key]' id='$key' aria-describedby='$desc_id' $attributes>";
+        $description = $this->create_description_markup($key, $field);
+
+        return $input . $description;
+    }
+
+    public function datadog_rum_field_select($key, $field)
+    {
+        $desc_id = $key . 'description';
+        $value = esc_attr($this->datadog_rum_options[$key] ?? '');
+        $title = $field['title'];
+        $attributes = (!empty($field['attributes'])) ? $this->print_attributes($field['attributes']) : "";
+
+        $input = "<select name='datadog_rum_options[$key]' id='$key' aria-label='Select $title' aria-describedby='$desc_id' $attributes>";
+
+        foreach ($field['options'] as $parameter => $label) {
+            $selected = ($parameter === $value) ? ' selected' : '';
+            $input .= "<option value=\"$parameter\"$selected>$label</option>";
+        }
+
+        $input .= '</select>';
+        $description = $this->create_description_markup($key, $field);
+
+        return $input . $description;
+    }
+
+    public function datadog_rum_field_number($key, $field)
+    {
+        $desc_id = $key . 'description';
+        $value = esc_attr($this->datadog_rum_options[$key] ?? '');
+        $attributes = (!empty($field['attributes'])) ? $this->print_attributes($field['attributes']) : "";
+
+        $input = "<input type='number' name='datadog_rum_options[$key]' id='$key' value='$value' aria-describedby='$desc_id' $attributes>";
+        $description = $this->create_description_markup($key, $field);
+
+        return $input . $description;
+    }
+
+    public function create_description_markup($key, $field)
+    {
+        $desc_id = $key . 'description';
+        $description = (!empty($field['description'])) ? $field['description'] : null;
+        if (!empty($description)) {
+            $description = <<<DESC
+            <p id="$desc_id" class="description">$description</p>
+            DESC;
+        }
+        return $description;
+    }
+
+    public function print_attributes($array)
+    {
+        $attributes = [];
+        foreach ($array as $key => $value) {
+            $attributes[] = esc_attr($key) . '="' . esc_attr($value) . '"';
+        }
+        return implode(' ', $attributes);
     }
 
 
     public function add_datadog_rum_action_links($links)
     {
         $action_links = array(
-			'settings' => '<a href="' . admin_url( 'options-general.php?page=datadog-rum-config' ) . '" aria-label="' . esc_attr__( 'View Datadog RUM settings', 'wp-datadog-rum' ) . '">' . esc_html__( 'Settings', 'wp-datadog-rum' ) . '</a>',
-		);
+            'settings' => '<a href="' . admin_url('options-general.php?page=datadog-rum-config') . '" aria-label="' . esc_attr__('View Datadog RUM settings', 'wp-datadog-rum') . '">' . esc_html__('Settings', 'wp-datadog-rum') . '</a>',
+        );
 
-		return array_merge( $action_links, $links );
+        return array_merge($action_links, $links);
     }
 }

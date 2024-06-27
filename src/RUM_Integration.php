@@ -7,35 +7,50 @@ class RUM_Integration
     public function __construct()
     {
         add_action('wp_head', [$this, 'add_datadog_rum']);
-
-        if (is_admin()) {
-            add_action('admin_head', [$this, 'add_datadog_rum']);
-        }
     }
 
-    public function add_datadog_rum() {
-        if (! get_option('datadog_rum_client_token') || ! get_option('datadog_rum_app_id')) {
+    public function add_datadog_rum()
+    {
+        $options = get_option('datadog_rum_options');
+        if (empty($options)) {
             return;
         }
-    
+
+        // Check for client token and app id at a minimum.
+        if (empty($options['client_token']) && $options['app_id']) {
+            return;
+        }
+
         global $current_user;
         $current_user = is_user_logged_in() ? wp_get_current_user() : null;
-    
+
         // Enqueue the Datadog RUM script
         wp_enqueue_script('datadog-rum', 'https://www.datadoghq-browser-agent.com/datadog-rum-v5.js', [], null, false);
-    
+
         // Prepare inline script data
         $rum_init_data = [
-            'clientToken' => esc_js(get_option('datadog_rum_client_token')),
-            'applicationId' => esc_js(get_option('datadog_rum_app_id')),
-            'sampleRate' => esc_js(get_option('datadog_rum_sample_rate', 100)),
-            'trackInteractions' => esc_js(get_option('datadog_rum_track_interactions', 'true')),
+            'clientToken' => esc_js($options['client_token']),
+            'applicationId' => esc_js($options['app_id']),
+            'site' => esc_js($options['site']),
+            'service' => esc_js($options['site']),
+            'env' => esc_js($options['env']),
+            'version' => esc_js($options['version']),
+            'sessionSampleRate' => (int) esc_js($options['session_sample_rate']),
+            'sessionReplaySampleRate' => (int) esc_js($options['session_replay_sample_rate']),
+            'trackUserInteractions' => !empty($options['track_user_interactions']) ? true : false,
+            'trackResources' => !empty($options['track_resources']) ? true : false,
+            'trackLongTasks' => !empty($options['track_long_tasks']) ? true : false,
+            'defaultPrivacyLevel' => esc_js($options['default_privacy_level']),
         ];
-    
+
+        $rum_data = array_filter($rum_init_data, function ($value) {
+            return $value !== '';
+        });
+
         $rum_context_data = [
             'logged_in' => $current_user ? 'true' : 'false',
         ];
-    
+
         if ($current_user) {
             $rum_context_data = array_merge($rum_context_data, [
                 'id' => esc_js($current_user->ID),
@@ -44,13 +59,11 @@ class RUM_Integration
                 'name' => esc_js($current_user->display_name),
             ]);
         }
-    
+
         // Enqueue inline script
         wp_add_inline_script('datadog-rum', '
-            window.DD_RUM && window.DD_RUM.init(' . wp_json_encode($rum_init_data) . ');
-            window.DD_RUM && window.DD_RUM.addRumGlobalContext("usr", ' . wp_json_encode($rum_context_data) . ');
-        '); 
+            window.DD_RUM && window.DD_RUM.init(' . wp_json_encode($rum_data, JSON_PRETTY_PRINT) . ');
+            window.DD_RUM && window.DD_RUM.setGlobalContextProperty("usr", ' . wp_json_encode($rum_context_data, JSON_PRETTY_PRINT) . ');
+        ');
     }
-    
 }
-
