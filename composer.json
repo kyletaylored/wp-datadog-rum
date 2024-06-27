@@ -1,0 +1,27 @@
+{
+    "name": "kyletaylored/wp-datadog-rum",
+    "description": "Integrate Datadog RUM with WordPress",
+    "type": "wordpress-plugin", 
+    "license": "MIT",
+    "authors": [
+      {
+        "name": "Kyle Taylor",
+        "homepage": "https://kyletaylor.dev"
+      },
+      {
+        "name": "Ilan Rabinovitch (Original Author)", 
+        "homepage": "http://www.fonz.net"
+      }
+    ],
+    "homepage": "https://github.com/kyletaylored/wp-datadog-rum",
+    "minimum-stability": "dev", 
+    "require": {}, 
+    "require-dev": {
+        "squizlabs/php_codesniffer": "*"
+    },
+    "scripts": {
+        "phpcs": "phpcs --standard=WordPress --extensions=php src/",
+        "phpcbf": "phpcbf --standard=WordPress --extensions=php src/"
+    }
+  }
+  
