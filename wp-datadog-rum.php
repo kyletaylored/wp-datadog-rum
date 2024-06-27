@@ -32,7 +32,7 @@ function add_DatadogRUM() {
 	  logged_in: <?php if (is_user_logged_in() ) { echo "true"; } else { echo "false"; } ?>,
       <?php if (is_user_logged_in()) { 
 	           echo 'id:'.$current_user->ID.',';
-			   echo 'login: "'.$current_user->user_login.'",';
+			      echo 'login: "'.$current_user->user_login.'",';
    	           echo 'email: "'.$current_user->user_email.'",'; 
    	           echo 'name: "'.$current_user->display_name.'",'; 
 		   }	   
