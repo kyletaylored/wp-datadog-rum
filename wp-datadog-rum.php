@@ -11,6 +11,13 @@
  * Original Author URI: http://www.fonz.net
  */
 
+if ( ! defined( 'WDR_PLUGIN_FILE' ) ) {
+	define( 'WDR_PLUGIN_FILE', __FILE__ );
+}
+if ( ! defined( 'WDR_PLUGIN_BASENAME' ) ) {
+  define( 'WDR_PLUGIN_BASENAME', plugin_basename( WDR_PLUGIN_FILE ) );
+}
+
 require_once __DIR__ . '/src/RUM_Integration.php';
 require_once __DIR__ . '/src/RUM_Admin.php';
 

@@ -8,7 +8,7 @@ class RUM_Admin
     {
         load_plugin_textdomain('datadog-rum', false, dirname(plugin_basename(__FILE__)) . '/languages');
         add_action('admin_menu', [$this, 'datadog_rum_config']);
-        add_filter('plugin_action_links_' . plugin_basename(__FILE__), [$this, 'add_datadog_rum_action_links']);
+        add_filter('plugin_action_links_' . WDR_PLUGIN_BASENAME, [$this, 'add_datadog_rum_action_links']);
     }
 
     public function print_datadogrum_management()
@@ -136,8 +136,10 @@ class RUM_Admin
 
     public function add_datadog_rum_action_links($links)
     {
-        $settings_link = '<a href="' . admin_url('plugins.php?page=datadog-rum-config') . '">' . __('Settings') . '</a>';
-        array_unshift($links, $settings_link);
-        return $links;
+        $action_links = array(
+			'settings' => '<a href="' . admin_url( 'options-general.php?page=datadog-rum-config' ) . '" aria-label="' . esc_attr__( 'View Datadog RUM settings', 'wp-datadog-rum' ) . '">' . esc_html__( 'Settings', 'wp-datadog-rum' ) . '</a>',
+		);
+
+		return array_merge( $action_links, $links );
     }
 }
