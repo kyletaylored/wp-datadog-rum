@@ -123,9 +123,9 @@ class RUM_Admin
     {
         if (function_exists('add_submenu_page')) {
             add_submenu_page(
-                'plugins.php',
-                __('Datadog Real User Monitoring', 'datadog-rum'),
-                __('Datadog Real User Monitoring'),
+                'options-general.php',
+                __('Datadog RUM', 'datadog-rum'),
+                __('Datadog RUM'),
                 'manage_options',
                 'datadog-rum-config',
                 [$this, 'print_datadogrum_management']
