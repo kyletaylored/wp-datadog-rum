@@ -1,5 +1,6 @@
 name: Create Release on New Tag
-'on':
+
+on:
   push:
     tags:
       - v*
