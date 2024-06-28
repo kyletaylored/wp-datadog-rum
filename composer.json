@@ -19,8 +19,8 @@
     "wp-coding-standards/wpcs": "^3"
   },
   "scripts": {
-    "phpcs": "phpcs --standard=WordPress --extensions=php src/",
-    "phpcbf": "phpcbf --standard=WordPress --extensions=php src/"
+    "phpcs": "phpcs --standard=WordPress --extensions=php src/ *.php",
+    "phpcbf": "phpcbf --standard=WordPress --extensions=php src/ *.php"
   },
   "config": {
     "allow-plugins": {

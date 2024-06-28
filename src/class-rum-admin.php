@@ -230,13 +230,7 @@ class RUM_Admin {
 	 * @return void
 	 */
 	public function datadog_rum_section_info() {
-		$section = <<<TEXT
-        <p>
-            Create a <a target="_blank" href="https://app.datadoghq.com/rum/list/">RUM application</a> in Datadog and enter its settings below. If you do not yet have an account you can sign up for a <a href="https://www.datadoghq.com/free-datadog-trial/">free trial</a>.
-        </p>
-        TEXT;
-
-		echo esc_html( $section );
+		echo '<p>Create a <a target="_blank" href="https://app.datadoghq.com/rum/list/">RUM application</a> in Datadog and enter its settings below. If you do not yet have an account you can sign up for a <a href="https://www.datadoghq.com/free-datadog-trial/">free trial</a>.</p>';
 	}
 
 	/**
