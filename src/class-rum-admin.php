@@ -163,7 +163,7 @@ class RUM_Admin {
 	 */
 	public function create_admin_page() {
 		$this->datadog_rum_options = get_option( 'datadog_rum_options' );
-		$image_url                 = WP_DATADOG_RUM_PLUGIN_URL . 'datadog.svg';
+		$image_url                 = esc_url( WP_DATADOG_RUM_PLUGIN_URL . 'datadog.svg' );
 
 		$form_top = <<<FORM_TOP
         <div class="wrap">
@@ -173,7 +173,8 @@ class RUM_Admin {
             <form method="post" action="options.php">
         FORM_TOP;
 
-		echo esc_html( $form_top );
+		// phpcs:ignore
+		echo $form_top;
 
 		// Render form content.
 		settings_fields( 'datadog_rum_option_group' );
@@ -185,7 +186,8 @@ class RUM_Admin {
         </div>
         FORM_BOTTOM;
 
-		echo esc_html( $form_bottom );
+		// phpcs:ignore
+		echo $form_bottom;
 	}
 
 	/**
@@ -262,7 +264,8 @@ class RUM_Admin {
 				break;
 		}
 
-		echo esc_html( $output );
+		// phpcs:ignore
+		echo $output;
 	}
 
 	/**
