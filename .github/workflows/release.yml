@@ -1,0 +1,41 @@
+name: Create Release on New Tag
+'on':
+  push:
+    tags:
+      - v*
+jobs:
+
+  test_and_lint:  # New job for tests and linting
+    runs-on: ubuntu-latest
+    steps:
+    
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+    
+      - name: Run linting
+        run: composer phpcs 
+
+  create_release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if: ${{ needs.test_and_lint.result == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate Release Notes
+        id: generate_release_notes
+        uses: metcalfc/changelog-generator@v4.3.1
+        with:
+          myToken: '${{ secrets.GITHUB_TOKEN }}'
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        with:
+          tag_name: '${{ github.ref }}'
+          release_name: 'Release ${{ github.ref }}'
+          draft: false
+          prerelease: false
+          body: '${{ steps.generate_release_notes.outputs.changelog }}'

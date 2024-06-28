@@ -23,8 +23,8 @@ if (!defined('WP_DATADOG_RUM_PLUGIN_URL')) {
     define('WP_DATADOG_RUM_PLUGIN_URL', plugin_dir_url(__FILE__));
 }
 
-require_once __DIR__ . '/src/RUM_Integration.php';
-require_once __DIR__ . '/src/RUM_Admin.php';
+require_once __DIR__ . '/src/class-rum-integration.php';
+require_once __DIR__ . '/src/class-rum-admin.php';
 
 use WP_Datadog_RUM\RUM_Integration;
 use WP_Datadog_RUM\RUM_Admin;
